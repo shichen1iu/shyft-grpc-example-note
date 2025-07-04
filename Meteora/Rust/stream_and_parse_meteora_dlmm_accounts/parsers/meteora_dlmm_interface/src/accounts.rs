@@ -1,16 +1,11 @@
+use crate::*;
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::pubkey::Pubkey;
-use crate::*;
-pub const BIN_ARRAY_BITMAP_EXTENSION_ACCOUNT_DISCM: [u8; 8] = [
-    80,
-    111,
-    124,
-    113,
-    55,
-    237,
-    18,
-    5,
-];
+pub const BIN_ARRAY_BITMAP_EXTENSION_ACCOUNT_DISCM: [u8; 8] = [80, 111, 124, 113, 55, 237, 18, 5];
+pub const SCALE_OFFSET: u8 = 64;
+pub const BASIS_POINT_MAX: u128 = 10000;
+pub const ONE: u128 = 1u128 << SCALE_OFFSET;
+
 #[derive(Clone, Debug, BorshDeserialize, BorshSerialize, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct BinArrayBitmapExtension {
@@ -27,15 +22,13 @@ impl BinArrayBitmapExtensionAccount {
         let mut maybe_discm = [0u8; 8];
         reader.read_exact(&mut maybe_discm)?;
         if maybe_discm != BIN_ARRAY_BITMAP_EXTENSION_ACCOUNT_DISCM {
-            return Err(
-                std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    format!(
-                        "discm does not match. Expected: {:?}. Received: {:?}",
-                        BIN_ARRAY_BITMAP_EXTENSION_ACCOUNT_DISCM, maybe_discm
-                    ),
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!(
+                    "discm does not match. Expected: {:?}. Received: {:?}",
+                    BIN_ARRAY_BITMAP_EXTENSION_ACCOUNT_DISCM, maybe_discm
                 ),
-            );
+            ));
         }
         Ok(Self(BinArrayBitmapExtension::deserialize(&mut reader)?))
     }
@@ -68,15 +61,13 @@ impl BinArrayAccount {
         let mut maybe_discm = [0u8; 8];
         reader.read_exact(&mut maybe_discm)?;
         if maybe_discm != BIN_ARRAY_ACCOUNT_DISCM {
-            return Err(
-                std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    format!(
-                        "discm does not match. Expected: {:?}. Received: {:?}",
-                        BIN_ARRAY_ACCOUNT_DISCM, maybe_discm
-                    ),
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!(
+                    "discm does not match. Expected: {:?}. Received: {:?}",
+                    BIN_ARRAY_ACCOUNT_DISCM, maybe_discm
                 ),
-            );
+            ));
         }
         Ok(Self(BinArray::deserialize(&mut reader)?))
     }
@@ -135,15 +126,13 @@ impl LbPairAccount {
         let mut maybe_discm = [0u8; 8];
         reader.read_exact(&mut maybe_discm)?;
         if maybe_discm != LB_PAIR_ACCOUNT_DISCM {
-            return Err(
-                std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    format!(
-                        "discm does not match. Expected: {:?}. Received: {:?}",
-                        LB_PAIR_ACCOUNT_DISCM, maybe_discm
-                    ),
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!(
+                    "discm does not match. Expected: {:?}. Received: {:?}",
+                    LB_PAIR_ACCOUNT_DISCM, maybe_discm
                 ),
-            );
+            ));
         }
         Ok(Self(LbPair::deserialize(&mut reader)?))
     }
@@ -155,6 +144,17 @@ impl LbPairAccount {
         let mut data = Vec::new();
         self.serialize(&mut data)?;
         Ok(data)
+    }
+    pub fn get_current_price(&self) -> std::io::Result<u128> {
+        let bps = u128::from(self.0.bin_step)
+            .checked_shl(SCALE_OFFSET.into())
+            .unwrap()
+            .checked_div(BASIS_POINT_MAX.into())
+            .unwrap();
+
+        let base = ONE.checked_add(bps).unwrap();
+
+        Ok(pow(base, self.0.active_id).unwrap())
     }
 }
 pub const ORACLE_ACCOUNT_DISCM: [u8; 8] = [139, 194, 131, 179, 140, 179, 229, 244];
@@ -174,15 +174,13 @@ impl OracleAccount {
         let mut maybe_discm = [0u8; 8];
         reader.read_exact(&mut maybe_discm)?;
         if maybe_discm != ORACLE_ACCOUNT_DISCM {
-            return Err(
-                std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    format!(
-                        "discm does not match. Expected: {:?}. Received: {:?}",
-                        ORACLE_ACCOUNT_DISCM, maybe_discm
-                    ),
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!(
+                    "discm does not match. Expected: {:?}. Received: {:?}",
+                    ORACLE_ACCOUNT_DISCM, maybe_discm
                 ),
-            );
+            ));
         }
         Ok(Self(Oracle::deserialize(&mut reader)?))
     }
@@ -222,15 +220,13 @@ impl PositionAccount {
         let mut maybe_discm = [0u8; 8];
         reader.read_exact(&mut maybe_discm)?;
         if maybe_discm != POSITION_ACCOUNT_DISCM {
-            return Err(
-                std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    format!(
-                        "discm does not match. Expected: {:?}. Received: {:?}",
-                        POSITION_ACCOUNT_DISCM, maybe_discm
-                    ),
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!(
+                    "discm does not match. Expected: {:?}. Received: {:?}",
+                    POSITION_ACCOUNT_DISCM, maybe_discm
                 ),
-            );
+            ));
         }
         Ok(Self(Position::deserialize(&mut reader)?))
     }
@@ -274,15 +270,13 @@ impl PositionV2Account {
         let mut maybe_discm = [0u8; 8];
         reader.read_exact(&mut maybe_discm)?;
         if maybe_discm != POSITION_V2_ACCOUNT_DISCM {
-            return Err(
-                std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    format!(
-                        "discm does not match. Expected: {:?}. Received: {:?}",
-                        POSITION_V2_ACCOUNT_DISCM, maybe_discm
-                    ),
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!(
+                    "discm does not match. Expected: {:?}. Received: {:?}",
+                    POSITION_V2_ACCOUNT_DISCM, maybe_discm
                 ),
-            );
+            ));
         }
         Ok(Self(PositionV2::deserialize(&mut reader)?))
     }
@@ -296,16 +290,7 @@ impl PositionV2Account {
         Ok(data)
     }
 }
-pub const PRESET_PARAMETER_ACCOUNT_DISCM: [u8; 8] = [
-    242,
-    62,
-    244,
-    34,
-    181,
-    112,
-    58,
-    170,
-];
+pub const PRESET_PARAMETER_ACCOUNT_DISCM: [u8; 8] = [242, 62, 244, 34, 181, 112, 58, 170];
 #[derive(Clone, Debug, BorshDeserialize, BorshSerialize, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct PresetParameter {
@@ -329,15 +314,13 @@ impl PresetParameterAccount {
         let mut maybe_discm = [0u8; 8];
         reader.read_exact(&mut maybe_discm)?;
         if maybe_discm != PRESET_PARAMETER_ACCOUNT_DISCM {
-            return Err(
-                std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    format!(
-                        "discm does not match. Expected: {:?}. Received: {:?}",
-                        PRESET_PARAMETER_ACCOUNT_DISCM, maybe_discm
-                    ),
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!(
+                    "discm does not match. Expected: {:?}. Received: {:?}",
+                    PRESET_PARAMETER_ACCOUNT_DISCM, maybe_discm
                 ),
-            );
+            ));
         }
         Ok(Self(PresetParameter::deserialize(&mut reader)?))
     }

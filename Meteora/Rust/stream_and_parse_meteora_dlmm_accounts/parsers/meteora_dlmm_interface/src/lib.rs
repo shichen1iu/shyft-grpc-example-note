@@ -9,3 +9,5 @@ pub mod errors;
 pub use errors::*;
 pub mod events;
 pub use events::*;
+pub mod u64x64_math;
+pub use u64x64_math::*;
